@@ -3,6 +3,10 @@ from ..models.frontier import PriorityQueueFrontier
 from ..models.solution import NoSolution, Solution
 from ..models.node import Node
 
+def heuristica(grid: Grid, nodo_c:Node):
+    eje_x, eje_y = nodo_c.state
+    eje_x_obj, eje_y_obj = grid.end
+    return abs(eje_x_obj - eje_x) + abs(eje_y_obj - eje_y)
 
 class AStarSearch:
     @staticmethod
@@ -19,8 +23,27 @@ class AStarSearch:
         root = Node("", state=grid.initial, cost=0, parent=None, action=None)
 
         # Initialize reached with the initial state
-        reached = {}
-        reached[root.state] = root.cost
+        frontera = PriorityQueueFrontier()
+        frontera.add(root, root.cost + heuristica(grid, root)) 
+
+        # Initialize reached with the initial state
+        alcanzados = {}
+        alcanzados[root.state] = root.cost
+
+        while True:
+            if frontera.is_empty():
+                return NoSolution(alcanzados)
+            nodo = frontera.pop()
+            if grid.objective_test(nodo.state):
+                return Solution(nodo, alcanzados)
+            for accion in grid.actions(nodo.state):
+                nuevo_estado=grid.result(nodo.state, accion)
+                costo = nodo.cost + grid.individual_cost(nodo.state, accion)
+                if nuevo_estado not in alcanzados or costo < alcanzados[nuevo_estado]:
+                    nuevo_nodo = Node("", state=nuevo_estado, cost=costo, parent=nodo, action=accion)
+                    alcanzados[nuevo_estado] = costo
+                    frontera.add(nuevo_nodo, nuevo_nodo.cost + heuristica(grid, nuevo_nodo))
+            
 
         # Initialize frontier with the root node
         # TODO Complete the rest!!
